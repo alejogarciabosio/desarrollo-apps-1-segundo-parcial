@@ -2,13 +2,15 @@ package ar.jornadas.ui
 
 import android.app.Application
 import androidx.lifecycle.*
-import ar.jornadas.Servicios
+import ar.jornadas.AppContainer
+import ar.jornadas.JornadasApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ProgramaModel(app: Application) : AndroidViewModel(app) {
-    private val servicios = Servicios(app)
+    private val contenedor: AppContainer = (app as JornadasApp).container
+    private val servicios = contenedor.servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
     val charlas = repo.programa.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -17,13 +19,10 @@ class ProgramaModel(app: Application) : AndroidViewModel(app) {
         repo.hayEdicion.map<Boolean, Boolean?> { it }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val fallo = MutableStateFlow(false)
     val cargando = MutableStateFlow(false)
-    private var cargaInicialHecha = false
 
-    /** Una sola carga automática por proceso; el ViewModel sobrevive a rotaciones. */
+    /** Una sola carga automática por proceso: el flag vive en el AppContainer, no en el ViewModel. */
     fun cargaInicial() {
-        if (cargaInicialHecha) return
-        cargaInicialHecha = true
-        recargar()
+        if (contenedor.reclamarCargaInicial()) recargar()
     }
 
     /** Actualización explícita. Se ignora si ya hay una petición en curso. */

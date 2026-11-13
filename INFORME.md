@@ -23,7 +23,8 @@ Se corrigieron los pedidos 41 a 44 sin perder datos de instalaciones previas. La
 
 **44 · Control de descargas** (`MainActivity.kt`, `ui/ProgramaModel.kt`, `ui/Catalogo.kt`)
 - Se quitaron las cargas de `onStart` y de `LaunchedEffect` (se disparaban al rotar, entrar a la ficha y cambiar de pestaña).
-- `cargaInicial()` corre una vez por proceso (se llama después de leer el extra `servicio_disponible`); `recargar()` es la actualización explícita y se ignora si ya hay una petición en curso (`cargando`), así dos toques suman un intento.
+- Nueva clase `JornadasApp` (Application, registrada en el Manifest con `android:name`) con un `AppContainer` que crea `Servicios` (Room, Retrofit, `ServicioLocal` con el contador) y guarda el flag de carga inicial. Así son únicos por proceso: salir con Atrás y reabrir no reinicia el contador ni dispara otra carga automática.
+- `cargaInicial()` pide el flag al `AppContainer` (se llama después de leer el extra `servicio_disponible`); `recargar()` es la actualización explícita y se ignora si ya hay una petición en curso (`cargando`), así dos toques suman un intento.
 - Al terminar (éxito o falla) `cargando` vuelve a `false`. Los filtros no se bloquean durante la espera.
 
 ## Cómo se verifica
@@ -39,4 +40,6 @@ Con el emulador abierto, `./gradlew installDebug` y la pestaña Mesa para elegir
 | 43 | Día 2 + Datos, abrir ficha, volver, rotar | Dos resultados de Datos |
 | 43 | Ficha abierta, Inicio, `adb shell am kill ar.jornadas`, Recientes | Recupera ficha y, al volver, ambos filtros |
 | 44 | Rotar, abrir ficha, cambiar pestaña | Contador sin cambios (1 auto + explícitas) |
+| 44 | Abrir, Atrás, reabrir sin matar el proceso | El contador sigue igual, no suma carga automática |
+| 42 | v1 marcar 11, pasar a v3 (desaparece), volver a v2 | La 11 regresa sin marcar y no está en Mi agenda |
 | 44 | Dos toques seguidos en Actualizar | +1 intento |
