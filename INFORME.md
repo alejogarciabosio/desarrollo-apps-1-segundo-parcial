@@ -43,3 +43,20 @@ Con el emulador abierto, `./gradlew installDebug` y la pestaña Mesa para elegir
 | 44 | Abrir, Atrás, reabrir sin matar el proceso | El contador sigue igual, no suma carga automática |
 | 42 | v1 marcar 11, pasar a v3 (desaparece), volver a v2 | La 11 regresa sin marcar y no está en Mi agenda |
 | 44 | Dos toques seguidos en Actualizar | +1 intento |
+
+## Otros problemas detectados (no modificados a propósito)
+
+La consigna pide corregir únicamente los pedidos 41 a 44, por lo que **no se modificó código fuera de ese alcance**, para no introducir cambios no solicitados en una versión con usuarios instalados. Durante la revisión se detectaron además los siguientes problemas, que quedan documentados como mejoras propuestas:
+
+| # | Ubicación | Problema | Mejora propuesta |
+| --- | --- | --- | --- |
+| 1 | `ui/ProgramaModel.kt:20-21` | `fallo` y `cargando` son `MutableStateFlow` públicos: la UI podría modificar el estado (rompe UDF). | Exponerlos como `StateFlow` de solo lectura (`private val _x` + `asStateFlow()`). |
+| 2 | `ui/ProgramaModel.kt:20-21` y `ui/Catalogo.kt` | Estado de pantalla modelado con flags sueltos (`fallo`, `cargando`, `hayEdicion`). | Un único `UiState` con `sealed interface` (Cargando / Éxito / Error) y `when` exhaustivo. |
+| 3 | `ui/ProgramaModel.kt:11` | `AndroidViewModel` obtiene sus dependencias del `Application`; no se pueden sustituir en pruebas. | `ViewModel` que reciba el repositorio por constructor + `ViewModelProvider.Factory`. |
+| 4 | `ui/Catalogo.kt:34` | El filtrado por día y tema se hace en el Composable (lógica en la UI). | Mover el filtrado al ViewModel y exponer la lista ya filtrada. |
+| 5 | `ui/Catalogo.kt:15` y `ui/Portada.kt:60` | Los Composables reciben el ViewModel entero y `Mesa` recibe `ServicioLocal` (capa de datos). | Pasar solo valores y lambdas (State Hoisting completo). |
+| 6 | `data/Programa.kt:17`, `data/AgendaRepository.kt:5,12` | Sin capa `domain`: la UI usa la Entity de Room `Charla`, no hay interfaz de repositorio y el mapeo DTO→Entity está inline. | Modelo de dominio, `interface` del repositorio en `domain/` y mappers `toDomain()` / `toEntity()` (DIP). |
+| 7 | `ui/Catalogo.kt:22`, `ui/Portada.kt` | Textos hardcodeados; el filtro de tema compara contra el texto visible `"Todos"`. | Pasar a `strings.xml` con `stringResource()` y usar un `enum` para los temas. |
+| 8 | `legacy/AgendaImpresa.kt` | Código muerto: no se referencia desde ninguna parte de la app. | Eliminarlo. |
+| 9 | `data/Programa.kt:62` | `exportSchema = false`: no queda historial del esquema para validar migraciones. | `exportSchema = true` con carpeta de esquemas y test de migración. |
+| 10 | `app/build.gradle.kts:4,34` | Room usa `kapt`, que es más lento y está en mantenimiento. | Migrar a KSP. |
